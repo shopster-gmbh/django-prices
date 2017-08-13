@@ -98,7 +98,7 @@ class PriceField(models.DecimalField):
 
 class TaxField(models.DecimalField):
 
-    description = 'A field that stores a Tax.'
+    description = 'A field that stores a Tax'
 
     def __init__(self, verbose_name=None, currency=None, **kwargs):
         self.currency = currency

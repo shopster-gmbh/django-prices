@@ -102,10 +102,10 @@ class TaxField(models.DecimalField):
 
     def __init__(self, verbose_name=None, currency=None, **kwargs):
         self.currency = currency
-        super(PriceField, self).__init__(verbose_name, **kwargs)
+        super(TaxField, self).__init__(verbose_name, **kwargs)
 
     def contribute_to_class(self, cls, name, **kwargs):
-        super(PriceField, self).contribute_to_class(cls, name, **kwargs)
+        super(TaxField, self).contribute_to_class(cls, name, **kwargs)
         setattr(cls, self.name, Creator(self))
 
     def from_db_value(self, value, expression, connection, context):

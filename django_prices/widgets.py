@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 
 from prices import Price
 
+
 __all__ = ['PriceInput'],['TaxInput']
 
 

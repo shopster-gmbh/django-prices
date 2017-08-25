@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import django
 from django.db import models
-from prices import Price
+from prices import Price, LinearTax
 
 from . import forms
 
@@ -41,16 +41,21 @@ class PriceField(models.DecimalField):
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)
 
-    def to_python(self, value):
+    def to_python(self, value, Tax):
         if isinstance(value, Price):
+
             if value.currency != self.currency:
                 raise ValueError('Invalid currency: %r (expected %r)' % (
                     value.currency, self.currency))
             return value
+            if isinstance(Tax, LinearTax):
+                Tax = super(PriceField, self).to_python(Tax)
+            return Tax
         value = super(PriceField, self).to_python(value)
         if value is None:
             return value
-        return Price(value, currency=self.currency)
+        return Price(value, Tax, currency=self.currency)
+
 
     def run_validators(self, value):
         if isinstance(value, Price):
@@ -91,78 +96,6 @@ class PriceField(models.DecimalField):
         name, path, args, kwargs = super(PriceField, self).deconstruct()
         kwargs['currency'] = self.currency
         return name, path, args, kwargs
-
-
-
-
-
-class TaxField(models.DecimalField):
-
-    description = 'A field that stores a Tax'
-
-    def __init__(self, verbose_name=None, currency=None, **kwargs):
-        self.currency = currency
-        super(TaxField, self).__init__(verbose_name, **kwargs)
-
-    def contribute_to_class(self, cls, name, **kwargs):
-        super(TaxField, self).contribute_to_class(cls, name, **kwargs)
-        setattr(cls, self.name, Creator(self))
-
-    def from_db_value(self, value, expression, connection, context):
-        return self.to_python(value)
-
-    def to_python(self, value):
-        if isinstance(value, Tax):
-            if value.currency != self.currency:
-                raise ValueError('Invalid currency: %r (expected %r)' % (
-                    value.currency, self.currency))
-            return value
-        value = super(TaxField, self).to_python(value)
-        if value is None:
-            return value
-        return Price(value, currency=self.currency)
-
-    def run_validators(self, value):
-        if isinstance(value, Tax):
-            value = value.net
-        return super(TaxField, self).run_validators(value)
-
-    def get_prep_value(self, value):
-        value = self.to_python(value)
-        if value is not None:
-            value = value.net
-        return value
-
-    def get_db_prep_save(self, value, connection):
-        value = self.get_prep_value(value)
-        if django.VERSION < (1, 9):
-            db_value = connection.ops.value_to_db_decimal
-        else:
-            db_value = connection.ops.adapt_decimalfield_value
-        return db_value(value, self.max_digits, self.decimal_places)
-
-    def value_to_string(self, obj):
-        value = self.value_from_object(obj)
-        if value is not None:
-            return value.net
-        return super(TaxField, self).value_to_string(value)
-
-    def formfield(self, **kwargs):
-        defaults = {'currency': self.currency,
-                    'form_class': forms.TaxField}
-        defaults.update(kwargs)
-        return super(TaxField, self).formfield(**defaults)
-
-    def get_default(self):
-        default = super(TaxField, self).get_default()
-        return self.to_python(default)
-
-    def deconstruct(self):
-        name, path, args, kwargs = super(TaxField, self).deconstruct()
-        kwargs['currency'] = self.currency
-        return name, path, args, kwargs
-
-
 
 
 
